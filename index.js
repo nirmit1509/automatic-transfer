@@ -1,4 +1,6 @@
 require('dotenv').config();
+const express = require('express');
+const app = express();
 
 const ethers = require('ethers');
 const { BigNumber, utils } = ethers;
@@ -72,3 +74,5 @@ const main = async () => {
 if (require.main === module) {
   main();
 }
+
+module.export = app;
