@@ -14,7 +14,12 @@ const depositWallet = new ethers.Wallet(
   provider,
 );
 
-const main = async () => {
+export default function handler(request, response) {
+  main();
+  response.status(200).send('Script is working...');
+}
+
+async function main(){
   const depositWalletAddress = await depositWallet.getAddress();
   console.log(`Watching for incoming tx to ${depositWalletAddress}...`);
 
@@ -69,10 +74,4 @@ const main = async () => {
       console.error(err);
     }
   });
-};
-
-if (require.main === module) {
-  main();
 }
-
-module.export = main;
