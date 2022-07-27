@@ -1,6 +1,6 @@
 require('dotenv').config();
-const express = require('express');
-const app = express();
+// const express = require('express');
+// const app = express();
 
 const ethers = require('ethers');
 const { BigNumber, utils } = ethers;
@@ -75,4 +75,4 @@ if (require.main === module) {
   main();
 }
 
-module.export = app;
+module.export = main;
