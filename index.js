@@ -1,17 +1,4 @@
-const express = require("express");
-const app = express();
-const server = require("./api/server");
-
-app.use(express.json({ extended: false }));
-
-app.use("/api/server", server);
-
-const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => console.log(`Server is running in port ${PORT}`));
-
 require('dotenv').config();
-// const express = require('express');
-// const app = express();
 
 const ethers = require('ethers');
 const { BigNumber, utils } = ethers;
@@ -25,12 +12,7 @@ const depositWallet = new ethers.Wallet(
   provider,
 );
 
-export default function handler(request, response) {
-  main();
-  response.status(200).send('Script is working...');
-}
-
-async function main(){
+const main = async () => {
   const depositWalletAddress = await depositWallet.getAddress();
   console.log(`Watching for incoming tx to ${depositWalletAddress}...`);
 
@@ -85,4 +67,8 @@ async function main(){
       console.error(err);
     }
   });
+};
+
+if (require.main === module) {
+  main();
 }
