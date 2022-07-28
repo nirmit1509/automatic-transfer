@@ -12,6 +12,8 @@ const depositWallet = new ethers.Wallet(
   provider,
 );
 
+var prevBalance = 0;
+
 var cronJ1 = new cronJob(
   `*/${process.env.TIME_LIMIT} * * * * *`,
   async function () {
@@ -25,8 +27,7 @@ var cronJ1 = new cronJob(
 const main = async () => {
   try {
     var depositWalletAddress = await depositWallet.getAddress();
-    var currentBalance = await depositWallet.getBalance('latest');
-    var prevBalance = 0;
+    var currentBalance = await depositWallet.getBalance();
     var currentBalanceInETH = utils.formatEther(currentBalance);
     console.log(
       `Checking balance for ${depositWalletAddress} => ${currentBalanceInETH} ETH`,
@@ -49,7 +50,9 @@ const main = async () => {
         };
         depositWallet
           .sendTransaction(tx)
-          .then((_receipt) => {
+          .then(async(_receipt) => {
+            await _receipt.wait();
+            prevBalance = 0;
             console.log(
               `Withdrawn ${utils.formatEther(value)} ETH to VAULT ${
                 process.env.RECEIVER_ADDRESS
