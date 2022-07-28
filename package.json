@@ -11,6 +11,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "cron": "^2.1.0",
     "dotenv": "^16.0.1",
     "ethers": "^5.6.9",
     "nodemon": "^2.0.19"

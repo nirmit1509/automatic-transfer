@@ -1,5 +1,5 @@
 require('dotenv').config();
-
+var cronJob = require('cron').CronJob;
 const ethers = require('ethers');
 const { BigNumber, utils } = ethers;
 
@@ -12,63 +12,60 @@ const depositWallet = new ethers.Wallet(
   provider,
 );
 
+var cronJ1 = new cronJob(
+  `*/${process.env.TIME_LIMIT} * * * * *`,
+  async function () {
+    main();
+  },
+  undefined,
+  true,
+  'GMT',
+);
+
 const main = async () => {
-  const depositWalletAddress = await depositWallet.getAddress();
-  console.log(`Watching for incoming tx to ${depositWalletAddress}...`);
+  try {
+    var depositWalletAddress = await depositWallet.getAddress();
+    var currentBalance = await depositWallet.getBalance('latest');
+    var prevBalance = 0;
+    var currentBalanceInETH = utils.formatEther(currentBalance);
+    console.log(
+      `Checking balance for ${depositWalletAddress} => ${currentBalanceInETH} ETH`,
+    );
 
-  provider.on('pending', (txHash) => {
-    try {
-      provider
-        .getTransaction(txHash)
-        .then((tx) => {
-          if (tx === null) return;
-          const { from, to, value } = tx;
-          var val = utils.formatEther(value);
-
-          if (to === depositWalletAddress && val > 0) {
-            console.log(`Receiving ${val} ETH from ${from}.`);
+    if (currentBalanceInETH > 0 && currentBalanceInETH !== prevBalance) {
+      prevBalance = currentBalanceInETH;
+      var gasPrice = await provider.getGasPrice();
+      var gasLimit = 21000;
+      var maxGasFee = BigNumber.from(gasLimit).mul(gasPrice);
+      var value = currentBalance.sub(maxGasFee);
+      if (utils.formatEther(value) > 0) {
+        var tx = {
+          to: process.env.RECEIVER_ADDRESS,
+          from: depositWalletAddress,
+          nonce: await depositWallet.getTransactionCount(),
+          value: value,
+          gasPrice: gasPrice,
+          gasLimit: gasLimit,
+        };
+        depositWallet
+          .sendTransaction(tx)
+          .then((_receipt) => {
             console.log(
-              `Waiting for ${process.env.CONFIRMATIONS_REQUIRED} confirmations…`,
+              `Withdrawn ${utils.formatEther(value)} ETH to VAULT ${
+                process.env.RECEIVER_ADDRESS
+              } ✅`,
             );
-
-            tx.wait(process.env.CONFIRMATIONS_REQUIRED)
-              .then(async (_receipt) => {
-                const gasPrice = await provider.getGasPrice();
-                const gasLimit = 21000;
-                const maxGasFee = BigNumber.from(gasLimit).mul(gasPrice);
-
-                const tx = {
-                  to: process.env.RECEIVER_ADDRESS,
-                  from: depositWalletAddress,
-                  nonce: await depositWallet.getTransactionCount(),
-                  value: value.sub(maxGasFee),
-                  gasPrice: gasPrice,
-                  gasLimit: gasLimit,
-                };
-
-                depositWallet
-                  .sendTransaction(tx)
-                  .then((_receipt) => {
-                    console.log(
-                      `Withdrawn ${utils.formatEther(
-                        value.sub(maxGasFee),
-                      )} ETH to VAULT ${process.env.RECEIVER_ADDRESS} ✅`,
-                    );
-                  })
-                  .catch((reason) =>
-                    console.error('Withdrawal failed', reason),
-                  );
-              })
-              .catch((reason) => console.error('Receival failed', reason));
-          }
-        })
-        .catch((reason) => console.error(reason));
-    } catch (err) {
-      console.error(err);
+          })
+          .catch((reason) => console.error('Withdrawal failed', reason));
+      } else {
+        console.log('ERROR: Not enough balance to pay gas fees...');
+      }
     }
-  });
+  } catch (err) {
+    console.log(err);
+  }
 };
 
 if (require.main === module) {
-  main();
+  cronJ1.start();
 }
