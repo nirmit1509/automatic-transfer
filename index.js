@@ -50,7 +50,7 @@ const main = async () => {
         };
         depositWallet
           .sendTransaction(tx)
-          .then(async(_receipt) => {
+          .then(async (_receipt) => {
             await _receipt.wait();
             prevBalance = 0;
             console.log(
@@ -59,7 +59,10 @@ const main = async () => {
               } ✅`,
             );
           })
-          .catch((reason) => console.error('Withdrawal failed', reason));
+          .catch((reason) => {
+            prevBalance = 0;
+            console.error('Withdrawal failed', reason);
+          });
       } else {
         console.log('ERROR: Not enough balance to pay gas fees...');
       }
